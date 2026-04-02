@@ -9,7 +9,7 @@ export interface User {
 }
 
 export interface AuthResponse {
-  access_token: string;
+  accessToken: string;
   user: User;
 }
 
@@ -39,11 +39,14 @@ export interface Variant {
 }
 
 export interface CreateVariantPayload {
-  colour: string;
-  size: string;
-  material: string;
+  attributes: {
+    color: string;
+    size: string;
+    material: string;
+  };
   price: number;
   stock: number;
+  sku: string;
 }
 
 export interface UpdateVariantPayload extends Partial<CreateVariantPayload> {}
@@ -55,6 +58,8 @@ export interface Product {
   name: string;
   description: string;
   category: string;
+  basePrice: string;        
+  imageUrl?: string;        
   variants: Variant[];
   createdAt: string;
   updatedAt: string;
@@ -65,6 +70,8 @@ export interface CreateProductPayload {
   name: string;
   description: string;
   category: string;
+  basePrice: number;
+  imageUrl?: string;
   variants: CreateVariantPayload[];
 }
 
@@ -108,13 +115,17 @@ export function fmtPrice(v: unknown): string {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export function getPriceRange(variants: Variant[]): string {
-  if (!variants || variants.length === 0) return 'N/A';
-  const prices = variants.map((v) => toNum(v.price));
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  if (min === max) return fmtPrice(min);
-  return `${fmtPrice(min)} – ${fmtPrice(max)}`;
+export function getPriceRange(product: Product): string {
+  // Use variants prices if available
+  if (product.variants && product.variants.length > 0) {
+    const prices = product.variants.map((v) => toNum(v.price));
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    if (min === max) return fmtPrice(min);
+    return `${fmtPrice(min)} – ${fmtPrice(max)}`;
+  }
+  // Fallback to basePrice
+  return fmtPrice(product.basePrice);
 }
 
 export function isOutOfStock(variants: Variant[]): boolean {

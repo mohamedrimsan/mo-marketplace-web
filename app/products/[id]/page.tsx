@@ -44,7 +44,7 @@ export default function ProductDetailPage() {
   if (!product) return null;
 
   const oos = isOutOfStock(product.variants);
-  const priceRange = getPriceRange(product.variants);
+  const priceRange = getPriceRange(product);
   const totalStock = getTotalStock(product.variants);
   const variantCount = product.variants?.length ?? 0;
 

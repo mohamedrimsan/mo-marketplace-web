@@ -28,19 +28,26 @@ api.interceptors.request.use(
 );
 
 // ─── Response interceptor — handle 401 globally ──────────────────────────────
-api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError<ApiError>) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('mo_token');
-        localStorage.removeItem('mo_user');
-        // Dispatch a custom event so AuthStore can react without circular dep
-        window.dispatchEvent(new CustomEvent('mo:auth:expired'));
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    if (typeof window !== 'undefined') {
+
+      let token: string | null = null;
+      try {
+        const blob = localStorage.getItem('mo-auth-storage');
+        if (blob) token = JSON.parse(blob)?.state?.token ?? null;
+      } catch {
+        token = null;
       }
+
+      if (token && config.headers) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+
     }
-    return Promise.reject(error);
-  }
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
 // ─── Typed helper to extract error message ───────────────────────────────────

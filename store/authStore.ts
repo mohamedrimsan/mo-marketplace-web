@@ -41,7 +41,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       setAuth: (data: AuthResponse) => {
-        const token = data.access_token;
+        const token = data.accessToken;
         safeLocalStorage.setItem('mo_token', token);
         set({
           user: data.user,

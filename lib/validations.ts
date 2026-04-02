@@ -27,9 +27,11 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
 // ─── Variant ─────────────────────────────────────────────────────────────────
 
 export const variantSchema = z.object({
-  colour: z.string().min(1, 'Colour is required').max(50),
-  size: z.string().min(1, 'Size is required').max(50),
-  material: z.string().min(1, 'Material is required').max(100),
+  attributes: z.object({
+    color: z.string().min(1, 'Color is required').max(50),
+    size: z.string().min(1, 'Size is required').max(50),
+    material: z.string().min(1, 'Material is required').max(100),
+  }),
   price: z
     .number({ invalid_type_error: 'Price must be a number' })
     .min(0.01, 'Price must be greater than 0'),
@@ -37,6 +39,7 @@ export const variantSchema = z.object({
     .number({ invalid_type_error: 'Stock must be a number' })
     .int('Stock must be a whole number')
     .min(0, 'Stock cannot be negative'),
+  sku: z.string().min(1, 'SKU is required'),
 });
 
 export type VariantFormValues = z.infer<typeof variantSchema>;
@@ -44,23 +47,24 @@ export type VariantFormValues = z.infer<typeof variantSchema>;
 // ─── Product ─────────────────────────────────────────────────────────────────
 
 export const productSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(120),
-  description: z
-    .string()
-    .min(10, 'Description must be at least 10 characters')
-    .max(2000),
-  category: z.string().min(2, 'Category is required').max(80),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  description: z.string().min(10, 'Description must be at least 10 characters'),
+  category: z.string().min(2, 'Category is required'),
+  basePrice: z.number({ invalid_type_error: 'Base price must be a number' })
+    .min(0.01, 'Base price must be greater than 0'),
+  imageUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   variants: z
     .array(variantSchema)
     .min(1, 'Add at least one variant')
     .refine(
       (variants) => {
         const keys = variants.map(
-          (v) => `${v.colour.toLowerCase()}|${v.size.toLowerCase()}|${v.material.toLowerCase()}`
+          (v) =>
+            `${v.attributes.color.toLowerCase()}|${v.attributes.size.toLowerCase()}|${v.attributes.material.toLowerCase()}`
         );
         return new Set(keys).size === keys.length;
       },
-      { message: 'Duplicate colour + size + material combination found' }
+      { message: 'Duplicate color + size + material combination found' }
     ),
 });
 

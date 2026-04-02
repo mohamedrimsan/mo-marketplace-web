@@ -15,18 +15,16 @@ import { Product } from '@/types';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_VARIANT = {
-  colour: '',
-  size: '',
-  material: '',
+  attributes: { color: '', size: '', material: '' },
   price: 0,
   stock: 0,
+  sku: '',
 };
 
 export default function CreateProductPage() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
 
-  // Guard: redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login?redirect=/products/create');
@@ -45,6 +43,8 @@ export default function CreateProductPage() {
       name: '',
       description: '',
       category: '',
+      basePrice: 0,
+      imageUrl: '',
       variants: [{ ...DEFAULT_VARIANT }],
     },
   });
@@ -56,12 +56,11 @@ export default function CreateProductPage() {
 
   const watchedVariants = watch('variants');
 
-  // Check for duplicate combos client-side (for visual feedback)
   const getDuplicateIndices = (): Set<number> => {
     const seen = new Map<string, number>();
     const dupes = new Set<number>();
     watchedVariants?.forEach((v, i) => {
-      const key = `${v.colour?.toLowerCase()}|${v.size?.toLowerCase()}|${v.material?.toLowerCase()}`;
+      const key = `${v.attributes?.color?.toLowerCase()}|${v.attributes?.size?.toLowerCase()}|${v.attributes?.material?.toLowerCase()}`;
       if (seen.has(key)) {
         dupes.add(i);
         dupes.add(seen.get(key)!);
@@ -87,7 +86,6 @@ export default function CreateProductPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      {/* Header */}
       <Button
         variant="ghost"
         size="sm"
@@ -109,6 +107,7 @@ export default function CreateProductPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+
         {/* ── Product Info ── */}
         <section className="rounded-sm border border-ink-border bg-ink-soft p-6 space-y-5">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-chalk-muted">
@@ -122,14 +121,13 @@ export default function CreateProductPage() {
             {...register('name')}
           />
 
-          {/* Textarea for description */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium uppercase tracking-widest text-chalk-muted">
               Description
             </label>
             <textarea
               rows={4}
-              placeholder="Describe your product in detail — materials, uses, unique qualities..."
+              placeholder="Describe your product in detail..."
               className={cn(
                 'w-full rounded-sm border bg-ink-muted px-3 py-2.5 text-sm text-chalk placeholder:text-chalk-muted/50 resize-none',
                 'transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/60',
@@ -140,9 +138,7 @@ export default function CreateProductPage() {
               {...register('description')}
             />
             {errors.description && (
-              <p className="text-xs text-crimson">
-                {errors.description.message}
-              </p>
+              <p className="text-xs text-crimson">{errors.description.message}</p>
             )}
           </div>
 
@@ -151,6 +147,26 @@ export default function CreateProductPage() {
             placeholder="e.g. Clothing, Electronics, Books"
             error={errors.category?.message}
             {...register('category')}
+          />
+
+          {/* NEW — Base Price */}
+          <Input
+            label="Base Price (USD)"
+            type="number"
+            step="0.01"
+            min="0.01"
+            placeholder="29.99"
+            error={errors.basePrice?.message}
+            {...register('basePrice', { valueAsNumber: true })}
+          />
+
+          {/* NEW — Image URL */}
+          <Input
+            label="Image URL (optional)"
+            type="url"
+            placeholder="https://example.com/image.jpg"
+            error={errors.imageUrl?.message}
+            {...register('imageUrl')}
           />
         </section>
 
@@ -162,7 +178,7 @@ export default function CreateProductPage() {
                 Variants
               </h2>
               <p className="mt-0.5 text-xs text-chalk-muted/60">
-                Each variant = unique colour + size + material combo
+                Each variant = unique color + size + material combo
               </p>
             </div>
             <Button
@@ -176,7 +192,6 @@ export default function CreateProductPage() {
             </Button>
           </div>
 
-          {/* Global variants error (Zod refine) */}
           {errors.variants?.root && (
             <div className="flex items-start gap-2 rounded-sm border border-crimson/30 bg-crimson/10 px-3 py-2.5 text-xs text-crimson">
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -184,7 +199,6 @@ export default function CreateProductPage() {
             </div>
           )}
 
-          {/* Variant list */}
           <div className="space-y-3">
             {fields.map((field, idx) => {
               const isDuplicate = duplicateIndices.has(idx);
@@ -198,13 +212,9 @@ export default function CreateProductPage() {
                       : 'border-ink-border/50 bg-ink-muted/30'
                   )}
                 >
-                  {/* Variant header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span
-                        className="font-mono text-xs text-chalk-muted"
-                        style={{ fontFamily: 'var(--font-geist-mono)' }}
-                      >
+                      <span className="font-mono text-xs text-chalk-muted">
                         #{String(idx + 1).padStart(2, '0')}
                       </span>
                       {isDuplicate && (
@@ -226,29 +236,29 @@ export default function CreateProductPage() {
                     )}
                   </div>
 
-                  {/* Colour / Size / Material */}
+                  {/* Color / Size / Material */}
                   <div className="grid grid-cols-3 gap-3">
                     <Input
-                      label="Colour"
+                      label="Color"
                       placeholder="e.g. Black"
-                      error={errors.variants?.[idx]?.colour?.message}
-                      {...register(`variants.${idx}.colour`)}
+                      error={errors.variants?.[idx]?.attributes?.color?.message}
+                      {...register(`variants.${idx}.attributes.color`)}
                     />
                     <Input
                       label="Size"
                       placeholder="e.g. M, 42, XL"
-                      error={errors.variants?.[idx]?.size?.message}
-                      {...register(`variants.${idx}.size`)}
+                      error={errors.variants?.[idx]?.attributes?.size?.message}
+                      {...register(`variants.${idx}.attributes.size`)}
                     />
                     <Input
                       label="Material"
                       placeholder="e.g. Cotton"
-                      error={errors.variants?.[idx]?.material?.message}
-                      {...register(`variants.${idx}.material`)}
+                      error={errors.variants?.[idx]?.attributes?.material?.message}
+                      {...register(`variants.${idx}.attributes.material`)}
                     />
                   </div>
 
-                  {/* Price / Stock */}
+                  {/* Price / Stock / SKU */}
                   <div className="grid grid-cols-2 gap-3">
                     <Input
                       label="Price (USD)"
@@ -257,9 +267,7 @@ export default function CreateProductPage() {
                       min="0.01"
                       placeholder="0.00"
                       error={errors.variants?.[idx]?.price?.message}
-                      {...register(`variants.${idx}.price`, {
-                        valueAsNumber: true,
-                      })}
+                      {...register(`variants.${idx}.price`, { valueAsNumber: true })}
                     />
                     <Input
                       label="Stock"
@@ -268,17 +276,22 @@ export default function CreateProductPage() {
                       step="1"
                       placeholder="0"
                       error={errors.variants?.[idx]?.stock?.message}
-                      {...register(`variants.${idx}.stock`, {
-                        valueAsNumber: true,
-                      })}
+                      {...register(`variants.${idx}.stock`, { valueAsNumber: true })}
                     />
                   </div>
+
+                  {/* SKU */}
+                  <Input
+                    label="SKU"
+                    placeholder="e.g. TSHIRT-BLACK-M-COT"
+                    error={errors.variants?.[idx]?.sku?.message}
+                    {...register(`variants.${idx}.sku`)}
+                  />
                 </div>
               );
             })}
           </div>
 
-          {/* Add more hint */}
           <button
             type="button"
             onClick={() => append({ ...DEFAULT_VARIANT })}
@@ -288,7 +301,6 @@ export default function CreateProductPage() {
           </button>
         </section>
 
-        {/* Submit */}
         <Button
           type="submit"
           isLoading={isSubmitting}

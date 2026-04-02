@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 export function ProductCard({ product }: { product: Product }) {
   const outOfStock = isOutOfStock(product.variants);
-  const priceRange = getPriceRange(product.variants);
+  const priceRange = getPriceRange(product);
   const variantCount = product.variants?.length ?? 0;
 
   return (
